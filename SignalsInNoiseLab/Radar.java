@@ -1,4 +1,4 @@
-
+import java.lang.Math;
 /**
  * The model for radar scan and accumulator
  * 
@@ -7,6 +7,10 @@
  */
 public class Radar
 {
+    private int ROWS;
+    private int COLS;
+    
+    private double TProb = .0001;
     
     // stores whether each cell triggered detection for the current scan of the radar
     // (true represents a detected monster, which may be a false positive)
@@ -15,9 +19,13 @@ public class Radar
     // value of each cell is incremented for each scan in which that cell triggers detection
     private int[][] accumulator;
     
+    private boolean[][][] scans;
+    
+    private boolean Aa = false;
+    
     // location of the monster
-    private int monsterLocationRow;
-    private int monsterLocationCol;
+    private double[] monsterLocationRow;
+    private double[] monsterLocationCol;
 
     // probability that a cell will trigger a false detection (must be >= 0 and < 1)
     private double noiseFraction;
@@ -43,8 +51,16 @@ public class Radar
         
         // randomly set the location of the monster (can be explicity set through the
         //  setMonsterLocation method for the unit test
-        monsterLocationRow = (int)(Math.random() * rows);
-        monsterLocationCol = (int)(Math.random() * cols);
+        monsterLocationRow = new double[]{(int)(Math.random() * rows), (int)(Math.random() * rows), (int)(Math.random() * rows)};
+        monsterLocationCol = new double[]{(int)(Math.random() * cols), (int)(Math.random() * cols), (int)(Math.random() * cols)};
+
+        ROWS = rows;
+        COLS = cols;
+        
+        scans = new boolean[1000][ROWS][COLS];
+        
+        currentScan = new boolean[rows][cols];
+        accumulator = new int[rows][cols];
         
         noiseFraction = 0.05;
         numScans= 0;
@@ -68,6 +84,27 @@ public class Radar
         // !!! add code here !!!
         //
         
+        for(int x=0; x<monsterLocationRow.length; x++){
+            if((int)(Math.random() / (TProb * monsterLocationRow.length)) == 0){
+                monsterLocationRow[x] = (Math.random() * ROWS);
+                monsterLocationCol[x] = (Math.random() * COLS);
+            }
+            setMonsterLocation((int)monsterLocationRow[x], (int)monsterLocationCol[x], x);
+        }
+        injectNoise();
+        Aa = !Aa;
+        for(int x=0; x<currentScan.length; x++){
+            for(int y=0; y<currentScan[x].length; y++){
+                if(currentScan[x][y]) accumulator[x][y] ++;
+                if(Aa && accumulator[x][y] > 0) accumulator[x][y] --;
+            }
+        }
+        for(int x=scans.length-1; x>0; x--){
+            scans[x] = scans[x - 1];
+        }
+        scans[0] = currentScan;
+        numScans ++;
+        
         
     }
 
@@ -78,11 +115,11 @@ public class Radar
      * @param   col     the column in which the monster is located
      * @pre row and col must be within the bounds of the radar grid
      */
-    public void setMonsterLocation(int row, int col)
+    public void setMonsterLocation(int row, int col, int monsterID)
     {
         // remember the row and col of the monster's location
-        monsterLocationRow = row;
-        monsterLocationCol = col;
+        monsterLocationRow[monsterID] = row;
+        monsterLocationCol[monsterID] = col;
         
         // update the radar grid to show that something was detected at the specified location
         currentScan[row][col] = true;
@@ -108,7 +145,13 @@ public class Radar
      */
     public boolean isDetected(int row, int col)
     {
-        return currentScan[row][col];
+        int CUTOFF = 250;
+        for(int x=0; x < scans.length && x <= CUTOFF && scans[x][row][col]; x++){
+            if(x >= CUTOFF){
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
@@ -170,6 +213,14 @@ public class Radar
         //
         // !!! add code here !!!
         //
+        currentScan = new boolean[ROWS][COLS];
+        for(int x=0; x<currentScan.length; x++){
+            for(int y=0; y<currentScan[x].length; y++){
+                if((int)(noiseFraction / Math.random()) == 0){
+                    currentScan[x][y] = true;
+                }
+            }
+        }
         
         
     }
