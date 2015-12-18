@@ -7,6 +7,7 @@ import java.lang.Math;
  */
 public class Radar
 {
+    private final static int CUTOFF = 250;
     private int ROWS;
     private int COLS;
     
@@ -145,8 +146,7 @@ public class Radar
      */
     public boolean isDetected(int row, int col)
     {
-        int CUTOFF = 250;
-        for(int x=0; x < scans.length && x <= CUTOFF && scans[x][row][col]; x++){
+        for(int x=0; x < scans.length && scans[x][row][col]; x++){
             if(x >= CUTOFF){
                 return true;
             }
